@@ -1,25 +1,34 @@
 #!/bin/ruby
 # -*- coding: utf-8 -*-
 require 'sqlite3'
+require 'curb'
 class HTML
   #TODO:Replace to a curl Webpage Grabber
-  def initialize(filename)
-    @file = File.open(filename)
+  def initialize(url)
+    @url = /[^\?]+/.match(url)#Strip URL for '?' and char after
+  end
+  def grabPage(page)
+    curl = Curl::Easy.new(String(@url) + "?sort=f&page=#{page}")
+    puts "url:#{String(@url)}?sort=f&page=#{page}"
+    curl.headers["Accept-Encoding"] = "gzip,deflate"
+    curl.encoding = "UTF-8"
+    curl.perform
+    @page = curl.body_str.force_encoding("UTF-8")
   end
   def getContext
-    temp = String.new
-    @file.each {|text| temp += text}
-    return temp
+    return @page
+#    return File.readlines("page2.html","r").to_s
   end
 end
 class REGEX
   def initialize(filename)
     @file = File.open(filename)
-  end
-  def getExpression
     temp = String.new
     @file.each {|text| temp += text}
-    return temp
+    @expression = temp
+  end
+  def getExpression
+    return @expression
   end
 end
 class DATABASE
@@ -34,11 +43,35 @@ class DATABASE
     return @db.execute("INSERT INTO list (uploadDate,smNumber,numViews,numComments,numMyList,numAds) VALUES ('#{uploadDate}','#{smNumber}','#{numViews}','#{numComments}','#{numMyList}','#{numAds}');")
   end
 end
-html = HTML.new("template")
+#COLLECTING RANGE SET
+colRange = 60 * 60 * 24 * 7 * 2 #default: 2 weeks, display in second.
+#COLLECTING RANGE SET
+html = HTML.new("http://www.nicovideo.jp/tag/VOCALOID新曲リンク")
 regex = REGEX.new("regexp")
 db = DATABASE.new("database.sqlite")
 #list = {uploadDate,smNumber,numViews,numComments,numMyList,numAds,recodeDate}
-html.getContext.scan(/#{regex.getExpression}/).each {|arr|
-  #arr = {year,month,date,hour,minute,title,smNumber,comment,views,numComments,myList,ads}
-  db.insert(DateTime.new(2000+Integer(arr[0]),Integer(arr[1]),Integer(arr[2]),Integer(arr[3]),Integer(arr[4]),0,'+09:00'),arr[6],arr[8],arr[9],arr[10],arr[11])
-}
+countPage = 2
+countSong = 0
+stop = false
+while !stop do
+  html.grabPage(countPage)
+  #File.open("testPage#{countPage}.html","w+").write(html.getContext)
+  html.getContext.scan(/#{regex.getExpression}/).each {|arr|
+    #arr = {month,date,hour,minute,title,smNumber,comment,views,numComments,myList,ads}
+    break if arr[1].nil?
+    date = DateTime.new(2014,Integer(arr[0]),Integer(arr[1]),Integer(arr[2]),Integer(arr[3]),0,'+09:00')
+    if(date.to_time.to_i + colRange < DateTime.now.to_time.to_i)
+      stop = true
+      break
+    end
+    print "\r"
+    print "#{countSong} songs,#{countPage} pages"
+    countSong += 1
+    db.insert(date,arr[5],arr[7],arr[8],arr[9],arr[10])
+  }
+  countPage += 1
+  puts "\n#{countSong} songs,#{countPage} pages,sleep..."
+  sleep(1)
+end
+puts "\nSenquance completed."
+puts "#{countSong} songs,#{countPage} pages have scaned."
