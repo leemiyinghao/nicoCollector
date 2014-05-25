@@ -71,7 +71,7 @@ while !stop do
     db.insert(date,arr[5],arr[7],arr[8],arr[9],arr[10])
   }
   countPage += 1
-  puts "\n#{countSong} songs,#{countPage} pages,sleep..."
+  puts ",sleep..."
   sleep(1)
 end
 puts "\nSenquance completed."
