@@ -53,6 +53,7 @@ db = DATABASE.new("database.sqlite")
 countPage = 2
 countSong = 0
 stop = false
+puts "time:#{DateTime.now.to_time.to_i + 9 * 60 * 60}"
 while !stop do
   html.grabPage(countPage)
   #File.open("testPage#{countPage}.html","w+").write(html.getContext)
@@ -60,7 +61,7 @@ while !stop do
     #arr = {month,date,hour,minute,title,smNumber,comment,views,numComments,myList,ads}
     break if arr[1].nil?
     date = DateTime.new(2014,Integer(arr[0]),Integer(arr[1]),Integer(arr[2]),Integer(arr[3]),0,'+09:00')
-    if(date.to_time.to_i + colRange < DateTime.now.to_time.to_i)
+    if(date.to_time.to_i + colRange < DateTime.now.to_time.to_i + 9 * 60 * 60)
       stop = true
       break
     end
