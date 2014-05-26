@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 require 'sqlite3'
 require 'curb'
+require 'rubygems'
 class HTML
   #TODO:Replace to a curl Webpage Grabber
   def initialize(url)
